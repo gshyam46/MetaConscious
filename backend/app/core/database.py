@@ -94,12 +94,12 @@ class DatabaseManager:
     async def initialize_database(self) -> bool:
         """Initialize database with schema.sql - identical to Next.js initializeDatabase"""
         try:
-            # Read schema.sql file from the Next.js app directory
+            # Read schema.sql file from the backend directory
             # Try different possible paths based on where the script is run from
             possible_paths = [
-                os.path.join(os.getcwd(), 'app', 'lib', 'db', 'schema.sql'),  # From root
-                os.path.join(os.path.dirname(__file__), '..', '..', '..', 'app', 'lib', 'db', 'schema.sql'),  # From backend/app/core
-                os.path.join(os.getcwd(), '..', 'app', 'lib', 'db', 'schema.sql'),  # From backend
+                os.path.join(os.getcwd(), 'schema.sql'),  # From backend directory
+                os.path.join(os.path.dirname(__file__), '..', '..', 'schema.sql'),  # From backend/app/core
+                os.path.join(os.getcwd(), 'backend', 'schema.sql'),  # From root
             ]
             
             schema_path = None

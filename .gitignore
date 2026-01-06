@@ -3,7 +3,7 @@
 # IDE and editors
 .idea/
 .vscode/
-.kiro/
+# .kiro/
 .env
 # Dependencies
 node_modules/

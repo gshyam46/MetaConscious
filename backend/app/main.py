@@ -19,7 +19,7 @@ from app.core.exceptions import (
     http_exception_handler,
     general_exception_handler
 )
-from app.api.routes import goals, tasks, plans, calendar, relationships, system
+from app.api.routes import goals, tasks, plans, calendar, relationships, system, chat, todos
 from app.services.scheduler import start_planning_scheduler, stop_planning_scheduler
 
 # Load environment variables
@@ -109,6 +109,8 @@ app.include_router(tasks.router, prefix="/api", tags=["tasks"])
 app.include_router(plans.router, prefix="/api", tags=["plans"])
 app.include_router(calendar.router, prefix="/api", tags=["calendar"])
 app.include_router(relationships.router, prefix="/api", tags=["relationships"])
+app.include_router(chat.router, prefix="/api", tags=["chat"])
+app.include_router(todos.router, prefix="/api", tags=["todos"])
 
 @app.options("/{full_path:path}")
 async def options_handler(full_path: str):

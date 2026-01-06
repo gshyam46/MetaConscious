@@ -3,7 +3,7 @@ Pydantic validation models
 Equivalent to Zod schemas in Next.js implementation
 """
 from pydantic import BaseModel, Field, validator
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict, Any
 from datetime import datetime, date
 import re
 
@@ -194,3 +194,59 @@ def validate_plan(plan_data: dict) -> DailyPlan:
         return DailyPlan(**plan_data)
     except Exception as error:
         raise ValueError(f"Invalid plan structure: {str(error)}")
+
+# Chat Models
+class ChatMessage(BaseModel):
+    """Chat message from user"""
+    content: str = Field(..., min_length=1, max_length=1000)
+    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
+
+class ChatAction(BaseModel):
+    """AI-suggested action"""
+    type: str
+    label: str
+    data: Dict[str, Any]
+
+class ChatResponse(BaseModel):
+    """AI response to chat message"""
+    response: str
+    timestamp: datetime
+    suggestions: List[ChatAction] = Field(default_factory=list)
+
+class TodoItem(BaseModel):
+    """Todo item with enhanced metadata"""
+    id: str
+    title: str
+    description: Optional[str] = None
+    priority: int = Field(..., ge=1, le=5)
+    difficulty: int = Field(..., ge=1, le=5)  # 1=easy, 5=very hard
+    estimated_duration: Optional[int] = None  # minutes
+    due_date: Optional[datetime] = None
+    reasoning: str = Field(..., min_length=10)
+    subtasks: List[str] = Field(default_factory=list)
+    status: Literal['pending', 'in_progress', 'completed', 'cancelled'] = 'pending'
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class TodoCreate(BaseModel):
+    """Create todo item"""
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    priority: int = Field(..., ge=1, le=5)
+    difficulty: int = Field(..., ge=1, le=5)
+    estimated_duration: Optional[int] = Field(None, ge=5)  # minimum 5 minutes
+    due_date: Optional[datetime] = None
+    reasoning: str = Field(..., min_length=10, max_length=500)
+    subtasks: List[str] = Field(default_factory=list)
+
+class TodoUpdate(BaseModel):
+    """Update todo item"""
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    priority: Optional[int] = Field(None, ge=1, le=5)
+    difficulty: Optional[int] = Field(None, ge=1, le=5)
+    estimated_duration: Optional[int] = Field(None, ge=5)
+    due_date: Optional[datetime] = None
+    reasoning: Optional[str] = Field(None, min_length=10, max_length=500)
+    subtasks: Optional[List[str]] = None
+    status: Optional[Literal['pending', 'in_progress', 'completed', 'cancelled']] = None

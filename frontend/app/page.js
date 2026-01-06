@@ -9,13 +9,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, Calendar, Target, CheckCircle2, Clock, Users, TrendingUp, Zap } from 'lucide-react';
+import { AlertCircle, Calendar, Target, CheckCircle2, Clock, Users, TrendingUp, Zap, Bot } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/api-config';
+import { ChatInterface } from '@/components/ui/chat-interface';
+import { TodoList } from '@/components/ui/todo-list';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [goals, setGoals] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [plan, setPlan] = useState(null);
@@ -26,8 +29,26 @@ export default function App() {
 
   // Initialize user and load data
   useEffect(() => {
-    initializeApp();
+    setMounted(true);
+    // Delay initialization to avoid hydration mismatch
+    const timer = setTimeout(() => {
+      initializeApp();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading MetaConscious...</p>
+        </div>
+      </div>
+    );
+  }
 
   async function initializeApp() {
     try {
@@ -38,10 +59,11 @@ export default function App() {
       setLlmConfigured(statusData.llm_configured);
 
       if (!statusData.user) {
-        // Initialize user
+        // Initialize user with a proper username
+        const username = prompt("Enter your username:", "user") || "user";
         const initRes = await apiRequest('/api/init', {
           method: 'POST',
-          body: JSON.stringify({ username: 'user', password: 'password' }),
+          body: JSON.stringify({ username: username, password: 'password' }),
         });
         const initData = await initRes.json();
         setUser(initData.user);
@@ -165,11 +187,20 @@ export default function App() {
       return;
     }
 
+    // Check if plan already exists for today
+    const today = new Date().toISOString().split('T')[0];
+    if (plan && plan.date === today) {
+      const shouldRegenerate = confirm('A plan already exists for today. Do you want to regenerate it? This will use LLM credits.');
+      if (!shouldRegenerate) {
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const res = await apiRequest('/api/generate-plan', {
         method: 'POST',
-        body: JSON.stringify({ date: new Date().toISOString().split('T')[0] }),
+        body: JSON.stringify({ date: today }),
       });
       
       const data = await res.json();
@@ -262,6 +293,10 @@ export default function App() {
             <TabsTrigger value="tasks">
               <CheckCircle2 className="h-4 w-4 mr-2" />
               Tasks
+            </TabsTrigger>
+            <TabsTrigger value="chat">
+              <Bot className="h-4 w-4 mr-2" />
+              AI Assistant
             </TabsTrigger>
             <TabsTrigger value="social">
               <Users className="h-4 w-4 mr-2" />
@@ -449,6 +484,11 @@ export default function App() {
           {/* Tasks View */}
           <TabsContent value="tasks" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
+              {/* Todo List with Checkboxes */}
+              <div className="md:col-span-2">
+                <TodoList />
+              </div>
+              
               {/* Tasks List */}
               <Card>
                 <CardHeader>
@@ -538,6 +578,30 @@ export default function App() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Chat View */}
+          <TabsContent value="chat" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5" />
+                  AI Planning Assistant
+                </CardTitle>
+                <CardDescription>
+                  Chat with MetaConscious about your tasks, goals, and planning decisions
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ChatInterface 
+                  onPlanGenerated={async () => {
+                    await loadDashboardData();
+                    setActiveView('daily'); // Switch to plan view when plan is generated
+                  }}
+                  onDataChanged={loadDashboardData}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Social View */}

@@ -78,7 +78,7 @@ class PlanningScheduler:
         """
         Stop planning scheduler with same logic as Next.js version
         """
-        if self.scheduler.is_running:
+        if self.scheduler.running:
             self.scheduler.shutdown()
         
         self.scheduler_started = False
